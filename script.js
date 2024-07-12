@@ -1,93 +1,94 @@
-document.getElementById('form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    calculateMinCost();
-});
-
 function calculateMinCost() {
-    let input = document.getElementById('rope-lengths').value;
-    let ropeLengths = input.split(',').map(Number);
-    let result = minCostToConnectRopes(ropeLengths);
-    document.getElementById('result').innerText = result;
+    let input = document.getElementById("rope-lengths").value;
+    let lengths = input.split(",").map(Number);
+    let result = minCostToConnectRopes(lengths);
+    document.getElementById("result").innerText = "Minimum cost: " + result;
 }
 
-function minCostToConnectRopes(ropes) {
-    if (ropes.length === 0) return 0;
+function minCostToConnectRopes(lengths) {
+    if (lengths.length === 0) return 0;
 
-    // Create a min-heap using a priority queue
-    let minHeap = new MinPriorityQueue();
-    for (let rope of ropes) {
-        minHeap.enqueue(rope);
+    // Use a min-heap to always get the two smallest ropes
+    let heap = new MinHeap();
+    for (let length of lengths) {
+        heap.insert(length);
     }
 
     let totalCost = 0;
-
-    while (minHeap.size() > 1) {
-        // Extract the two smallest ropes
-        let first = minHeap.dequeue().element;
-        let second = minHeap.dequeue().element;
-
-        // Calculate the cost of connecting them
+    while (heap.size() > 1) {
+        let first = heap.extractMin();
+        let second = heap.extractMin();
         let cost = first + second;
         totalCost += cost;
-
-        // Add the connected rope back into the min-heap
-        minHeap.enqueue(cost);
+        heap.insert(cost);
     }
 
     return totalCost;
 }
 
-// Priority queue implementation (Min-Heap)
-class MinPriorityQueue {
+class MinHeap {
     constructor() {
         this.heap = [];
     }
 
-    enqueue(element) {
-        this.heap.push(element);
-        this.bubbleUp();
+    insert(val) {
+        this.heap.push(val);
+        this._bubbleUp();
     }
 
-    dequeue() {
-        if (this.size() === 1) {
-            return { element: this.heap.pop() };
-        }
+    extractMin() {
+        if (this.heap.length === 1) return this.heap.pop();
         const min = this.heap[0];
         this.heap[0] = this.heap.pop();
-        this.bubbleDown();
-        return { element: min };
+        this._sinkDown(0);
+        return min;
     }
 
     size() {
         return this.heap.length;
     }
 
-    bubbleUp() {
-        let index = this.heap.length - 1;
-        while (index > 0) {
-            let parentIndex = Math.floor((index - 1) / 2);
-            if (this.heap[index] >= this.heap[parentIndex]) break;
-            [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
-            index = parentIndex;
+    _bubbleUp() {
+        let idx = this.heap.length - 1;
+        const element = this.heap[idx];
+        while (idx > 0) {
+            let parentIdx = Math.floor((idx - 1) / 2);
+            let parent = this.heap[parentIdx];
+            if (element >= parent) break;
+            this.heap[idx] = parent;
+            this.heap[parentIdx] = element;
+            idx = parentIdx;
         }
     }
 
-    bubbleDown() {
-        let index = 0;
-        while (index < this.heap.length) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
-            let smallest = index;
+    _sinkDown(idx) {
+        const length = this.heap.length;
+        const element = this.heap[idx];
+        while (true) {
+            let leftChildIdx = 2 * idx + 1;
+            let rightChildIdx = 2 * idx + 2;
+            let leftChild, rightChild;
+            let swap = null;
 
-            if (leftChildIndex < this.heap.length && this.heap[leftChildIndex] < this.heap[smallest]) {
-                smallest = leftChildIndex;
+            if (leftChildIdx < length) {
+                leftChild = this.heap[leftChildIdx];
+                if (leftChild < element) {
+                    swap = leftChildIdx;
+                }
             }
-            if (rightChildIndex < this.heap.length && this.heap[rightChildIndex] < this.heap[smallest]) {
-                smallest = rightChildIndex;
+
+            if (rightChildIdx < length) {
+                rightChild = this.heap[rightChildIdx];
+                if ((swap === null && rightChild < element) ||
+                    (swap !== null && rightChild < leftChild)) {
+                    swap = rightChildIdx;
+                }
             }
-            if (smallest === index) break;
-            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
-            index = smallest;
+
+            if (swap === null) break;
+            this.heap[idx] = this.heap[swap];
+            this.heap[swap] = element;
+            idx = swap;
         }
     }
 }
